@@ -30,7 +30,7 @@ def do_show_info(df):
     buffer = io.StringIO()
     df.info(buf=buffer)
     df_info = buffer.getvalue()
-    with st.expander("Ver info del DataFrame"):
+    with st.expander("Ver info del DataFrame", expanded=True):
         st.text(df_info)
 
 
@@ -67,7 +67,7 @@ def do_show_chart_circle_plot(my_df):
     chart_circle = alt.Chart(my_df).mark_circle(size=60).encode(
         x=alt.X(alt.repeat("column"), type='quantitative'),
         y=alt.Y(alt.repeat("row"), type='quantitative'),
-        color=alt.Color('high_traffic:N')
+        color=alt.Color('high_traffic:N', scale=alt.Scale(scheme='set1'))
     ).properties(
         width=150,
         height=150
@@ -86,7 +86,7 @@ def do_show_scatter_plots(my_df):
         scatter_plot = alt.Chart(my_df).mark_circle().encode(
             x=alt.X('calories:Q', title='Calories'),
             y=alt.Y(f'{variable}:Q', title=variable),
-            color=alt.Color('high_traffic:N', scale=alt.Scale(scheme='category20b'), legend=alt.Legend(title='High Traffic'))
+            color=alt.Color('high_traffic:N', scale=alt.Scale(scheme='tableau10'), legend=alt.Legend(title='High Traffic'))
         ).properties(
             width=400,
             height=300,
@@ -97,23 +97,6 @@ def do_show_scatter_plots(my_df):
 
 
 def test_transformers(my_df, columns):
-    
-    # my_pt = PowerTransformer()
-    # fig = plt.figure(figsize=(20,30))
-    # j = 1
-    
-    # for i in columns:
-    #     array = np.array(my_df[i]).reshape(-1, 1)
-    #     y = my_pt.fit_transform(array)
-
-    #     plt.subplot(4,2,j)
-    #     sns.histplot(array, bins = 50, kde = True)
-    #     plt.title(f"Distribución original de la variable {i}")
-
-    #     plt.subplot(4,2,j+1)
-    #     sns.histplot(y, bins = 50, kde = True)
-    #     plt.title(f"Transformación Power Transform de la variable {i}")
-    #     j += 2
 
     pt = PowerTransformer()
     transformed_data = pt.fit_transform(my_df[columns])
@@ -217,7 +200,7 @@ def do_apply_linear_regression(X, y):
     recall = recall_score(y_test, y_prediccion)
 
     # Mostramos los resultados de la Regresión Logística
-    with st.expander("**Resultados de la Regresión Logística:**"):
+    with st.expander("**Resultados de la Regresión Logística:**", expanded=True):
         st.text(f'Accuracy: {accuracy}')
         st.text(f'F1: {f1}')
         st.text(f'Precision: {precision}')
@@ -296,7 +279,7 @@ def do_show_recipes_by_category_high_traffic(my_high_traffic_recipes):
     plt.figure(figsize=(8, 6))
 
     # Define una paleta de colores personalizada
-    custom_palette = ["#75dddd", "#508991", "#172a3a", "#004346", "#09bc8a"]
+    custom_palette = ["#493657", "#ce7da5", "#bee5bf", "#dff3e3", "#ffd1ba"]
     sns.barplot(x=df_categoricas.index, y='Count', data=df_categoricas, palette=custom_palette)
 
     plt.xticks(rotation=45)

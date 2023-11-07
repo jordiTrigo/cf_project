@@ -4,6 +4,7 @@ venv/
 # Ignorar archivos de configuración específicos de Python
 *.pyc
 __pycache__/
+ipynb_checkpoints/
 
 # Otras exclusiones específicas de tu proyecto
 # ...

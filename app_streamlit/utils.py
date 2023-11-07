@@ -17,6 +17,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
+from sklearn.metrics import confusion_matrix
 
 
 
@@ -150,12 +151,16 @@ def get_apply_power_transformer(my_df_enc):
     return X, y
 
 
-def do_apply_linear_regression(X, y):
-
-    from sklearn.linear_model import LogisticRegression
+def get_train_test_split(X, y):
 
     # Separacion de los datos en train y test
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=17)
+    return X_train, X_test, y_train, y_test
+
+
+def do_apply_linear_regression(X, y, X_train, X_test, y_train, y_test):
+
+    from sklearn.linear_model import LogisticRegression
 
     # Definimos el flujo o pipeline que usamos para aplicar el modelo
     my_pipeline = Pipeline([
@@ -238,9 +243,6 @@ def do_apply_linear_regression(X, y):
     plt.ylabel('Característica')
     st.pyplot(plt)
 
-
-    from sklearn.metrics import confusion_matrix
-
     # Matriz de confusión del modelo SVM
     lr_confusion = confusion_matrix(y_test, y_prediccion)
 
@@ -264,11 +266,11 @@ def do_apply_linear_regression(X, y):
     return my_high_traffic_recipes
 
 
-def do_show_recipes_by_category_high_traffic(my_high_traffic_recipes):
+def do_show_recipes_high_traffic(my_high_traffic_recipes, categorical_var):
     
-    # Columna/Variable categóricas: 'category_'
+    # Columna/Variable categóricas: categorical_var
     df_categoricas = pd.DataFrame(
-                        my_high_traffic_recipes.filter(like='category')
+                        my_high_traffic_recipes.filter(like=categorical_var)
                                             .sum()
                                             .sort_values(ascending=False)
                     )
@@ -284,3 +286,94 @@ def do_show_recipes_by_category_high_traffic(my_high_traffic_recipes):
 
     plt.xticks(rotation=45)
     st.pyplot(plt)
+
+
+def do_apply_svm(X, y, X_train, X_test, y_train, y_test):
+    
+    from sklearn.svm import SVC
+
+    # Definir un flujo de trabajo para SVM
+    svm_pipeline = Pipeline([
+        ('scaler', StandardScaler()),
+        ('selector', SelectKBest(f_classif)),
+        ('classifier', SVC(probability=True))
+    ])
+
+    # Definir parámetros para búsqueda en cuadrícula
+    svm_parameters = {
+        'selector__k': ['all'],
+        'classifier__C': [0.1, 1, 10],
+        'classifier__kernel': ['linear', 'rbf'],
+    }
+
+    # Instanciar GridSearchCV
+    svm_grid_search = GridSearchCV(svm_pipeline, svm_parameters, cv=5, scoring='precision')
+
+    # Entrenar el modelo SVM
+    svm_grid_search.fit(X_train, y_train)
+
+    # Evaluar el modelo SVM en el conjunto de prueba
+    svm_best_estimator = svm_grid_search.best_estimator_
+    svm_y_pred_prob = svm_best_estimator.predict_proba(X_test)[:, 1]
+    my_threshold = 0.55
+    svm_y_pred = (svm_y_pred_prob >= my_threshold).astype(int)
+
+    # Calcular métricas para el modelo SVM
+    svm_accuracy = accuracy_score(y_test, svm_y_pred)
+    svm_f1 = f1_score(y_test, svm_y_pred)
+    svm_precision = precision_score(y_test, svm_y_pred)
+    svm_recall = recall_score(y_test, svm_y_pred)
+
+    # Mostrar resultados del modelo SVM
+    with st.expander("**Resultados del modelo SVM:**", expanded=True):
+        st.text(f'Accuracy: {svm_accuracy}')
+        st.text(f'F1: {svm_f1}')
+        st.text(f'Precision: {svm_precision}')
+        st.text(f'Recall: {svm_recall}')
+
+    # Índices de las recetas con tráfico alto respecto el conjunto de test
+    high_traffic_inds = np.where(svm_y_pred == 1)[0]
+
+    # Recetas con un tráfico alto
+    high_traffic_recs = X_test.iloc[high_traffic_inds]
+
+    # Vamos a graficar las puntuaciones respecto a las características seleccionadas
+    selector_s = svm_best_estimator.named_steps['selector']
+    selected_inds = selector_s.get_support(indices=True)
+    selected_scores_s = selector_s.scores_[selected_inds]
+    selected_features_s = X.columns[selected_inds]
+
+    # Mostramos un gráfico de tipo bar plot con las puntuaciones respecto a las características estudidadas
+    plt.figure(figsize=(8, 6))
+    
+    # Define una paleta de colores personalizada
+    custom_palette = ["#586ba4", "#324376", "#f5dd90", "#f68e5f", "#f76c5e"]
+    sns.barplot(x=selected_scores_s, y=selected_features_s, palette=custom_palette)
+
+    plt.title('Puntuaciones de las características via el modelo SVM')
+    plt.xlabel('Puntuación')
+    plt.ylabel('Característica')
+    st.pyplot(plt)
+
+
+    # Matriz de confusión del modelo SVM
+    svm_confusion = confusion_matrix(y_test, svm_y_pred)
+
+    # Visualización de la matriz de confusión
+    plt.figure(figsize=(8, 6))
+
+    sns.heatmap(
+        svm_confusion,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        xticklabels=['High Traffic', 'Low Traffic'],
+        yticklabels=['High Traffic', 'Low Traffic']
+    )
+
+    plt.title("Matriz de Confusión - SVM")
+    plt.xlabel("Predicción")
+    plt.ylabel("Valor Real")
+    st.pyplot(plt)
+
+    return high_traffic_recs

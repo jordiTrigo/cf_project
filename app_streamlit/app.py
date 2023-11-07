@@ -15,8 +15,10 @@ from utils import (
     test_transformers,
     do_prepare_hot_encoder,
     get_apply_power_transformer,
+    get_train_test_split,
     do_apply_linear_regression,
-    do_show_recipes_by_category_high_traffic,
+    do_show_recipes_high_traffic,
+    do_apply_svm,
 )
 
 
@@ -402,8 +404,10 @@ st.markdown('''
     Utilizaré la matriz de confusión para visualizar cómo se distribuyen las predicciones del modelo de Regresión Logística en comparación con los valores reales en los 
         datos de prueba. Esto me permitirá evaluar y comprender mejor el rendimiento del modelo según verdaderos positivos, falsos positivos, verdaderos negativos y falsos negativos.
 ''')
+# Separacion de los datos en train y test
+X_train, X_test, y_train, y_test = get_train_test_split(X, y)
 
-my_high_traffic_recipes = do_apply_linear_regression(X, y)
+my_high_traffic_recipes = do_apply_linear_regression(X, y, X_train, X_test, y_train, y_test)
 
 st.markdown('''
     ## **Evaluando el modelo y sus resultados**
@@ -443,4 +447,27 @@ st.markdown('''
     Usamos el mismo procedimiento para poder mostrar una gráfica de barras para el caso de las variables categóricas 'servings_'.
 ''')
 
-do_show_recipes_by_category_high_traffic(my_high_traffic_recipes)
+do_show_recipes_high_traffic(my_high_traffic_recipes, 'category')
+do_show_recipes_high_traffic(my_high_traffic_recipes, 'servings')
+
+
+st.markdown('''
+    ### Mostramos las primeras 15 filas que contienen recetas con un alto 'high_traffic'
+''')
+st.dataframe(my_high_traffic_recipes.head(15))
+
+
+st.markdown('''
+    ## Modelo SVM
+
+    El Support Vector Machine (Máquina de Vectores de Soporte) es un algoritmo de Machine Learning utilizado para tareas de clasificación y regresión. En el contexto de clasificación, SVM se utiliza 
+        para separar dos clases distintas de datos, lo que lo convierte en una herramienta eficaz para la clasificación binaria. Además, SVM ofrece un alto grado de precisión y es una excelente opción 
+            cuando la precisión es una prioridad.
+
+    Utilizaré SVM para clasificar recetas en función de su tráfico, es decir, para predecir si una receta generará un tráfico alto o bajo.
+''')
+
+high_traffic_recs = do_apply_svm(X, y, X_train, X_test, y_train, y_test)
+
+do_show_recipes_high_traffic(high_traffic_recs, 'category')
+do_show_recipes_high_traffic(high_traffic_recs, 'servings')
